@@ -42,11 +42,11 @@ func NewDatabase(connString string) (*Database, error) {
 		`,
 		auctionUpsertQuery: `
 			INSERT INTO auctions (realm_id, auction_house_id, item_id, interval, timestamp,
-			                      quantity, sum, min, max, p05, p10, p25, p50, p75, p90)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+			                      quantity, min, max, p05, p10, p25, p50, p75, p90)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
 			ON CONFLICT (realm_id, auction_house_id, item_id, interval, timestamp) 
-			DO UPDATE SET quantity = $6, sum = $7, min = $8, max = $9, p05 = $10, p10 = $11, p25 = $12, p50 = $13, 
-			    p75 = $14, p90 = $15
+			DO UPDATE SET quantity = $6, min = $7, max = $8, p05 = $9, p10 = $10, p25 = $11, p50 = $12, 
+			    p75 = $13, p90 = $14
 		`,
 	}, nil
 }
@@ -58,7 +58,6 @@ type Auction struct {
 	Interval       int16
 	Timestamp      int32
 	Quantity       int32
-	Sum            int32
 	Min            int32
 	Max            int32
 	P05            int32
@@ -76,7 +75,7 @@ func (database *Database) InsertAuction(auction *Auction) error {
 	}
 
 	_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval, auction.Timestamp,
-		auction.Sum, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25, auction.P50,
+		auction.Quantity, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25, auction.P50,
 		auction.P75, auction.P90)
 	if err != nil {
 		return err
@@ -279,7 +278,7 @@ func (database *Database) insertAuctionsBatch(auctions []*Auction) error {
 
 	for _, auction := range auctions {
 		_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval,
-			auction.Timestamp, auction.Sum, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25,
+			auction.Timestamp, auction.Quantity, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25,
 			auction.P50, auction.P75, auction.P90)
 		if err != nil {
 			tx.Rollback()
