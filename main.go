@@ -42,10 +42,11 @@ func NewDatabase(connString string) (*Database, error) {
 		`,
 		auctionUpsertQuery: `
 			INSERT INTO auctions (realm_id, auction_house_id, item_id, interval, timestamp,
-			                      sum, min, max, p05, p10, p25, p50, p75, p90)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+			                      quantity, sum, min, max, p05, p10, p25, p50, p75, p90)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
 			ON CONFLICT (realm_id, auction_house_id, item_id, interval, timestamp) 
-			DO UPDATE SET sum = $6, min = $7, max = $8, p05 = $9, p10 = $10, p25 = $11, p50 = $12, p75 = $13, p90 = $14
+			DO UPDATE SET quantity = $6, sum = $7, min = $8, max = $9, p05 = $10, p10 = $11, p25 = $12, p50 = $13, 
+			    p75 = $14, p90 = $15
 		`,
 	}, nil
 }
@@ -56,6 +57,7 @@ type Auction struct {
 	ItemID         int
 	Interval       int16
 	Timestamp      int32
+	Quantity       int32
 	Sum            int32
 	Min            int32
 	Max            int32
