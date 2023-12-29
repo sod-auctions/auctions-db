@@ -11,6 +11,7 @@ type Database struct {
 	db                      *sql.DB
 	realmUpsertQuery        string
 	auctionHouseUpsertQuery string
+	selectItemIdsQuery      string
 	itemUpsertQuery         string
 	auctionUpsertQuery      string
 }
@@ -35,6 +36,7 @@ func NewDatabase(connString string) (*Database, error) {
 			ON CONFLICT (id)
 			DO UPDATE SET name = $2 WHERE auction_houses.id = $1
 		`,
+		selectItemIdsQuery: "SELECT id FROM items",
 		itemUpsertQuery: `
 			INSERT INTO items (id, name, media_url, rarity)
 			VALUES ($1, $2, $3, $4)
@@ -158,6 +160,26 @@ type Item struct {
 	Name     string
 	MediaURL string
 	Rarity   string
+}
+
+func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
+	rows, err := database.db.Query(database.selectItemIdsQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := make(map[int32]struct{})
+	for rows.Next() {
+		var id int32
+		err = rows.Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		ids[id] = struct{}{}
+	}
+
+	return ids, nil
 }
 
 func (database *Database) InsertItem(item *Item) error {
