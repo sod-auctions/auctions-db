@@ -3,6 +3,7 @@ package auctions_db
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
 )
 
 type Database struct {
