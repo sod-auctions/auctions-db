@@ -12,7 +12,9 @@ type Database struct {
 	realmUpsertQuery        string
 	auctionHouseUpsertQuery string
 	selectItemIdsQuery      string
+	itemSimilarityQuery     string
 	itemUpsertQuery         string
+	selectAuctionQuery      string
 	auctionUpsertQuery      string
 }
 
@@ -37,11 +39,24 @@ func NewDatabase(connString string) (*Database, error) {
 			DO UPDATE SET name = $2 WHERE auction_houses.id = $1
 		`,
 		selectItemIdsQuery: "SELECT id FROM items",
+		itemSimilarityQuery: `
+			SELECT id,name,media_url,rarity FROM items
+			WHERE name % $1
+			ORDER BY similarity(name, $1) DESC
+			LIMIT $2
+		`,
 		itemUpsertQuery: `
 			INSERT INTO items (id, name, media_url, rarity)
 			VALUES ($1, $2, $3, $4)
 			ON CONFLICT (id)
 			DO UPDATE SET name = $2, media_url = $3, rarity = $4 WHERE items.id = $1
+		`,
+		selectAuctionQuery: `
+			SELECT timestamp, quantity, min, p05, p10, p25, p50, p75, p90, max
+			FROM auctions
+			WHERE interval = $1 AND realm_id = $2 AND auction_house_id = $3 AND item_id = $4
+			ORDER BY timestamp DESC
+			LIMIT $5
 		`,
 		auctionUpsertQuery: `
 			INSERT INTO auctions (realm_id, auction_house_id, item_id, interval, timestamp,
@@ -71,11 +86,42 @@ type Auction struct {
 	P90            int32
 }
 
+func (database *Database) GetAuctions(interval int16, realmId int16, auctionHouseId int16, itemId int32, limit int16) ([]*Auction, error) {
+	stmt, err := database.db.Prepare(database.selectAuctionQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(interval, realmId, auctionHouseId, itemId, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var auctions []*Auction
+	for rows.Next() {
+		var a Auction
+		err := rows.Scan(&a.Timestamp, &a.Quantity, &a.Min, &a.P05, &a.P10, &a.P25, &a.P50, &a.P75, &a.P90, &a.Max)
+		if err != nil {
+			return nil, err
+		}
+		auctions = append(auctions, &a)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return auctions, nil
+}
+
 func (database *Database) InsertAuction(auction *Auction) error {
 	stmt, err := database.db.Prepare(database.auctionUpsertQuery)
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval, auction.Timestamp,
 		auction.Quantity, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25, auction.P50,
@@ -107,6 +153,7 @@ func (database *Database) InsertAuctionHouse(auctionHouse *AuctionHouse) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(auctionHouse.Id, auctionHouse.Name)
 	if err != nil {
@@ -136,6 +183,7 @@ func (database *Database) InsertRealm(realm *Realm) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(realm.Id, realm.Name)
 	if err != nil {
@@ -182,11 +230,42 @@ func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
 	return ids, nil
 }
 
+func (database *Database) GetSimilarItems(name string, limit int) ([]*Item, error) {
+	stmt, err := database.db.Prepare(database.itemSimilarityQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(name, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []*Item
+	for rows.Next() {
+		var i Item
+		err := rows.Scan(&i.Id, &i.Name, &i.MediaURL, &i.Rarity)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
 func (database *Database) InsertItem(item *Item) error {
 	stmt, err := database.db.Prepare(database.itemUpsertQuery)
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	_, err = stmt.Exec(item.Id, item.Name, item.MediaURL, item.Rarity)
 	if err != nil {
@@ -220,6 +299,7 @@ func (database *Database) insertItemsBatch(items []*Item) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	for _, item := range items {
 		_, err = stmt.Exec(item.Id, item.Name, item.MediaURL, item.Rarity)
@@ -246,6 +326,7 @@ func (database *Database) insertRealmsBatch(realms []*Realm) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	for _, realm := range realms {
 		_, err = stmt.Exec(realm.Id, realm.Name)
@@ -272,6 +353,7 @@ func (database *Database) insertAuctionHousesBatch(auctionHouses []*AuctionHouse
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	for _, auctionHouse := range auctionHouses {
 		_, err = stmt.Exec(auctionHouse.Id, auctionHouse.Name)
@@ -298,6 +380,7 @@ func (database *Database) insertAuctionsBatch(auctions []*Auction) error {
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
 
 	for _, auction := range auctions {
 		_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval,
