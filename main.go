@@ -178,7 +178,7 @@ func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceD
 		return err
 	}
 
-	_, err = tx.Exec("TRUNCATE TABLE price_distributions")
+	_, err = tx.Exec("TRUNCATE TABLE price_distributions_temp")
 
 	err = tx.Commit()
 	if err != nil {
