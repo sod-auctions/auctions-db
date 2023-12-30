@@ -1,72 +1,13 @@
-package auctions_db
+package main
 
 import (
-	"database/sql"
-	"fmt"
-	_ "github.com/lib/pq"
+	"context"
+	"github.com/go-pg/pg/v10"
 )
 
 type Database struct {
-	BatchSize               int16
-	db                      *sql.DB
-	realmUpsertQuery        string
-	auctionHouseUpsertQuery string
-	selectItemIdsQuery      string
-	itemSimilarityQuery     string
-	itemUpsertQuery         string
-	selectAuctionQuery      string
-	auctionUpsertQuery      string
-}
-
-func NewDatabase(connString string) (*Database, error) {
-	db, err := sql.Open("postgres", connString)
-	if err != nil {
-		return nil, err
-	}
-	return &Database{
-		BatchSize: 250,
-		db:        db,
-		realmUpsertQuery: `
-			INSERT INTO realms (id, name)
-			VALUES ($1, $2)
-			ON CONFLICT (id)
-			DO UPDATE SET name = $2 WHERE realms.id = $1
-		`,
-		auctionHouseUpsertQuery: `
-			INSERT INTO auction_houses (id, name)
-			VALUES ($1, $2)
-			ON CONFLICT (id)
-			DO UPDATE SET name = $2 WHERE auction_houses.id = $1
-		`,
-		selectItemIdsQuery: "SELECT id FROM items",
-		itemSimilarityQuery: `
-			SELECT id,name,media_url,rarity FROM items
-			WHERE name % $1
-			ORDER BY similarity(name, $1) DESC
-			LIMIT $2
-		`,
-		itemUpsertQuery: `
-			INSERT INTO items (id, name, media_url, rarity)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (id)
-			DO UPDATE SET name = $2, media_url = $3, rarity = $4 WHERE items.id = $1
-		`,
-		selectAuctionQuery: `
-			SELECT timestamp, quantity, min, p05, p10, p25, p50, p75, p90, max
-			FROM auctions
-			WHERE interval = $1 AND realm_id = $2 AND auction_house_id = $3 AND item_id = $4
-			ORDER BY timestamp DESC
-			LIMIT $5
-		`,
-		auctionUpsertQuery: `
-			INSERT INTO auctions (realm_id, auction_house_id, item_id, interval, timestamp,
-			                      quantity, min, max, p05, p10, p25, p50, p75, p90)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
-			ON CONFLICT (realm_id, auction_house_id, item_id, interval, timestamp) 
-			DO UPDATE SET quantity = $6, min = $7, max = $8, p05 = $9, p10 = $10, p25 = $11, p50 = $12, 
-			    p75 = $13, p90 = $14
-		`,
-	}, nil
+	BatchSize int
+	db        *pg.DB
 }
 
 type Auction struct {
@@ -86,123 +27,6 @@ type Auction struct {
 	P90            int32
 }
 
-func (database *Database) GetAuctions(interval int16, realmId int16, auctionHouseId int16, itemId int32, limit int16) ([]*Auction, error) {
-	stmt, err := database.db.Prepare(database.selectAuctionQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(interval, realmId, auctionHouseId, itemId, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var auctions []*Auction
-	for rows.Next() {
-		var a Auction
-		err := rows.Scan(&a.Timestamp, &a.Quantity, &a.Min, &a.P05, &a.P10, &a.P25, &a.P50, &a.P75, &a.P90, &a.Max)
-		if err != nil {
-			return nil, err
-		}
-		auctions = append(auctions, &a)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return auctions, nil
-}
-
-func (database *Database) InsertAuction(auction *Auction) error {
-	stmt, err := database.db.Prepare(database.auctionUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval, auction.Timestamp,
-		auction.Quantity, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25, auction.P50,
-		auction.P75, auction.P90)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (database *Database) InsertAuctions(auctions []*Auction) error {
-	for i := 0; i < len(auctions); i += int(database.BatchSize) {
-		err := database.insertAuctionsBatch(auctions[i:min(i+int(database.BatchSize), len(auctions))])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type AuctionHouse struct {
-	Id   int16
-	Name string
-}
-
-func (database *Database) InsertAuctionHouse(auctionHouse *AuctionHouse) error {
-	stmt, err := database.db.Prepare(database.auctionHouseUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(auctionHouse.Id, auctionHouse.Name)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (database *Database) insertAuctionHouses(auctionHouses []*AuctionHouse) error {
-	for i := 0; i < len(auctionHouses); i += int(database.BatchSize) {
-		err := database.insertAuctionHousesBatch(auctionHouses[i:min(i+int(database.BatchSize), len(auctionHouses))])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-type Realm struct {
-	Id   int16
-	Name string
-}
-
-func (database *Database) InsertRealm(realm *Realm) error {
-	stmt, err := database.db.Prepare(database.realmUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(realm.Id, realm.Name)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (database *Database) InsertRealms(realms []*Realm) error {
-	for i := 0; i < len(realms); i += int(database.BatchSize) {
-		err := database.insertRealmsBatch(realms[i:min(i+int(database.BatchSize), len(realms))])
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 type Item struct {
 	Id       int32
 	Name     string
@@ -210,187 +34,125 @@ type Item struct {
 	Rarity   string
 }
 
-func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
-	rows, err := database.db.Query(database.selectItemIdsQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	ids := make(map[int32]struct{})
-	for rows.Next() {
-		var id int32
-		err = rows.Scan(&id)
-		if err != nil {
-			return nil, err
-		}
-		ids[id] = struct{}{}
-	}
-
-	return ids, nil
+type PriceDistribution struct {
+	RealmID        int16
+	AuctionHouseID int16
+	ItemID         int32
+	BuyoutEach     int32
+	Quantity       int32
 }
 
-func (database *Database) GetSimilarItems(name string, limit int) ([]*Item, error) {
-	stmt, err := database.db.Prepare(database.itemSimilarityQuery)
+func NewDatabase(connString string) (*Database, error) {
+	options, err := pg.ParseURL(connString)
 	if err != nil {
 		return nil, err
 	}
-	defer stmt.Close()
 
-	rows, err := stmt.Query(name, limit)
+	db := pg.Connect(options)
+	ctx := context.Background()
+	if err := db.Ping(ctx); err != nil {
+		return nil, err
+	}
+
+	return &Database{
+		BatchSize: 250,
+		db:        db,
+	}, nil
+}
+
+func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
+	var itemIds []int32
+	err := database.db.Model((*Item)(nil)).Column("id").Select(&itemIds)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	var items []*Item
-	for rows.Next() {
-		var i Item
-		err := rows.Scan(&i.Id, &i.Name, &i.MediaURL, &i.Rarity)
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, &i)
+	itemsMap := make(map[int32]struct{}, len(itemIds))
+	for _, id := range itemIds {
+		itemsMap[id] = struct{}{}
 	}
 
-	if err = rows.Err(); err != nil {
+	return itemsMap, nil
+}
+
+func (database *Database) GetSimilarItems(name string, limit int) ([]Item, error) {
+	var items []Item
+	_, err := database.db.Query(&items, `
+		SELECT id,name,media_url,rarity FROM items
+			WHERE name % ?
+			ORDER BY similarity(name, $1) DESC
+			LIMIT ?
+	`, name, limit)
+	if err != nil {
 		return nil, err
 	}
-
 	return items, nil
 }
 
 func (database *Database) InsertItem(item *Item) error {
-	stmt, err := database.db.Prepare(database.itemUpsertQuery)
+	_, err := database.db.Model(item).Insert()
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	return nil
+}
 
-	_, err = stmt.Exec(item.Id, item.Name, item.MediaURL, item.Rarity)
+func (database *Database) GetAuctions(interval int16, realmId int16, auctionHouseId int16, itemId int32, limit int16) ([]Auction, error) {
+	var auctions []Auction
+	_, err := database.db.Query(&auctions, `
+		SELECT timestamp, quantity, min, p05, p10, p25, p50, p75, p90, max
+		FROM auctions
+		WHERE interval = ? AND realm_id = ? AND auction_house_id = ? AND item_id = ?
+		ORDER BY timestamp DESC
+		LIMIT ?
+	`, interval, realmId, auctionHouseId, itemId, limit)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	return auctions, nil
+}
+
+func (database *Database) InsertAuctions(auctions []*Auction) error {
+	for i := 0; i < len(auctions); i += database.BatchSize {
+		end := i + database.BatchSize
+		if end > len(auctions) {
+			end = len(auctions)
+		}
+		batch := auctions[i:end]
+		_, err := database.db.Model(&batch).Insert()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (database *Database) InsertItems(items []*Item) error {
-	for i := 0; i < len(items); i += int(database.BatchSize) {
-		err := database.insertItemsBatch(items[i:min(i+int(database.BatchSize), len(items))])
+func (database *Database) GetPriceDistributions(realmId int16, auctionHouseId int16, itemId int32) ([]PriceDistribution, error) {
+	var priceDistributions []PriceDistribution
+	_, err := database.db.Query(&priceDistributions, `
+		SELECT buyout_each, quantity
+		FROM price_distributions
+		WHERE realm_id = ? AND auction_house_id = ? AND item_id = ? ORDER BY buyout_each
+	`, realmId, auctionHouseId, itemId)
+	if err != nil {
+		return nil, err
+	}
+	return priceDistributions, nil
+}
+
+func (database *Database) InsertPriceDistributions(priceDistributions []*PriceDistribution) error {
+	for i := 0; i < len(priceDistributions); i += database.BatchSize {
+		end := i + database.BatchSize
+		if end > len(priceDistributions) {
+			end = len(priceDistributions)
+		}
+		batch := priceDistributions[i:end]
+		_, err := database.db.Model(&batch).Insert()
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
-}
-
-func (database *Database) insertItemsBatch(items []*Item) error {
-	if len(items) > int(database.BatchSize) {
-		return fmt.Errorf("batch size (%v) exceeded", database.BatchSize)
-	}
-
-	tx, err := database.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(database.itemUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, item := range items {
-		_, err = stmt.Exec(item.Id, item.Name, item.MediaURL, item.Rarity)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
-func (database *Database) insertRealmsBatch(realms []*Realm) error {
-	if len(realms) > int(database.BatchSize) {
-		return fmt.Errorf("batch size (%v) exceeded", database.BatchSize)
-	}
-
-	tx, err := database.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(database.realmUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, realm := range realms {
-		_, err = stmt.Exec(realm.Id, realm.Name)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
-func (database *Database) insertAuctionHousesBatch(auctionHouses []*AuctionHouse) error {
-	if len(auctionHouses) > int(database.BatchSize) {
-		return fmt.Errorf("batch size (%v) exceeded", database.BatchSize)
-	}
-
-	tx, err := database.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(database.auctionHouseUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, auctionHouse := range auctionHouses {
-		_, err = stmt.Exec(auctionHouse.Id, auctionHouse.Name)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
-}
-
-func (database *Database) insertAuctionsBatch(auctions []*Auction) error {
-	if len(auctions) > int(database.BatchSize) {
-		return fmt.Errorf("batch size (%v) exceeded", database.BatchSize)
-	}
-
-	tx, err := database.db.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(database.auctionUpsertQuery)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, auction := range auctions {
-		_, err = stmt.Exec(auction.RealmID, auction.AuctionHouseID, auction.ItemID, auction.Interval,
-			auction.Timestamp, auction.Quantity, auction.Min, auction.Max, auction.P05, auction.P10, auction.P25,
-			auction.P50, auction.P75, auction.P90)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	return tx.Commit()
 }
