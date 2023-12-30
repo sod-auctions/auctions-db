@@ -141,17 +141,49 @@ func (database *Database) GetPriceDistributions(realmId int16, auctionHouseId in
 	return priceDistributions, nil
 }
 
-func (database *Database) InsertPriceDistributions(priceDistributions []*PriceDistribution) error {
+func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceDistribution) error {
 	for i := 0; i < len(priceDistributions); i += database.BatchSize {
 		end := i + database.BatchSize
 		if end > len(priceDistributions) {
 			end = len(priceDistributions)
 		}
 		batch := priceDistributions[i:end]
-		_, err := database.db.Model(&batch).Insert()
+		_, err := database.db.Model(&batch).Table("price_distributions_temp").Insert()
 		if err != nil {
 			return err
 		}
+	}
+
+	tx, err := database.db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_distributions RENAME TO price_distributions_temp2")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_distributions_temp RENAME TO price_distributions")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_distributions_temp2 RENAME TO price_distributions_temp")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("TRUNCATE TABLE price_distributions")
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	return nil
