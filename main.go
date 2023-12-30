@@ -80,9 +80,9 @@ func (database *Database) GetSimilarItems(name string, limit int) ([]Item, error
 	_, err := database.db.Query(&items, `
 		SELECT id,name,media_url,rarity FROM items
 			WHERE name % ?
-			ORDER BY similarity(name, $1) DESC
+			ORDER BY similarity(name, ?) DESC
 			LIMIT ?
-	`, name, limit)
+	`, name, name, limit)
 	if err != nil {
 		return nil, err
 	}
