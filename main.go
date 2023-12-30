@@ -154,37 +154,37 @@ func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceD
 		}
 	}
 
-	tx, err := database.db.Begin()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec("ALTER TABLE price_distributions RENAME TO price_distributions_temp2")
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec("ALTER TABLE price_distributions_temp RENAME TO price_distributions")
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec("ALTER TABLE price_distributions_temp2 RENAME TO price_distributions_temp")
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec("TRUNCATE TABLE price_distributions_temp")
-
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
+	//tx, err := database.db.Begin()
+	//if err != nil {
+	//	tx.Rollback()
+	//	return err
+	//}
+	//
+	//_, err = tx.Exec("ALTER TABLE price_distributions RENAME TO price_distributions_temp2")
+	//if err != nil {
+	//	tx.Rollback()
+	//	return err
+	//}
+	//
+	//_, err = tx.Exec("ALTER TABLE price_distributions_temp RENAME TO price_distributions")
+	//if err != nil {
+	//	tx.Rollback()
+	//	return err
+	//}
+	//
+	//_, err = tx.Exec("ALTER TABLE price_distributions_temp2 RENAME TO price_distributions_temp")
+	//if err != nil {
+	//	tx.Rollback()
+	//	return err
+	//}
+	//
+	//_, err = tx.Exec("TRUNCATE TABLE price_distributions_temp")
+	//
+	//err = tx.Commit()
+	//if err != nil {
+	//	tx.Rollback()
+	//	return err
+	//}
 
 	return nil
 }
