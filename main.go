@@ -1,4 +1,4 @@
-package main
+package auctions_db
 
 import (
 	"context"
