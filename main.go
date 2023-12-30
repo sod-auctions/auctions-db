@@ -55,7 +55,7 @@ func NewDatabase(connString string) (*Database, error) {
 	}
 
 	return &Database{
-		BatchSize: 250,
+		BatchSize: 1000,
 		db:        db,
 	}, nil
 }
