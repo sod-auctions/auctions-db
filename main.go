@@ -148,7 +148,7 @@ func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceD
 			end = len(priceDistributions)
 		}
 		batch := priceDistributions[i:end]
-		_, err := database.db.Model(&batch).Table("price_distributions_temp").Insert()
+		_, err := database.db.Model(&batch).Insert()
 		if err != nil {
 			return err
 		}
