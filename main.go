@@ -306,10 +306,10 @@ func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceD
 	return nil
 }
 
-func (database *Database) ReplaceCurrentAuctions(currentAuctions []*CurrentAuction) error {
-	cat := make([]*currentAuctionsTemp, len(currentAuctions))
-	for i, v := range currentAuctions {
-		cat[i] = &currentAuctionsTemp{
+func (database *Database) ReplaceCurrentAuctions(auctions []*Auction) error {
+	currentAuctions := make([]*currentAuctionsTemp, len(auctions))
+	for i, v := range auctions {
+		currentAuctions[i] = &currentAuctionsTemp{
 			RealmID:        v.RealmID,
 			AuctionHouseID: v.AuctionHouseID,
 			ItemID:         v.ItemID,
@@ -325,12 +325,12 @@ func (database *Database) ReplaceCurrentAuctions(currentAuctions []*CurrentAucti
 		}
 	}
 
-	for i := 0; i < len(cat); i += database.BatchSize {
+	for i := 0; i < len(currentAuctions); i += database.BatchSize {
 		end := i + database.BatchSize
-		if end > len(cat) {
-			end = len(cat)
+		if end > len(currentAuctions) {
+			end = len(currentAuctions)
 		}
-		batch := cat[i:end]
+		batch := currentAuctions[i:end]
 		_, err := database.db.Model(&batch).Insert()
 		if err != nil {
 			return err
