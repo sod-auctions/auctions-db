@@ -18,14 +18,14 @@ type Auction struct {
 	Interval       int16    `pg:"interval,pk"`
 	Timestamp      int32    `pg:"timestamp,pk"`
 	Quantity       int32    `pg:"quantity"`
-	Min            int32    `pg:"min"`
-	Max            int32    `pg:"max"`
-	P05            int32    `pg:"p05"`
-	P10            int32    `pg:"p10"`
-	P25            int32    `pg:"p25"`
-	P50            int32    `pg:"p50"`
-	P75            int32    `pg:"p75"`
-	P90            int32    `pg:"p90"`
+	Min            int32    `pg:"min,use_zero"`
+	Max            int32    `pg:"max,use_zero"`
+	P05            int32    `pg:"p05,use_zero"`
+	P10            int32    `pg:"p10,use_zero"`
+	P25            int32    `pg:"p25,use_zero"`
+	P50            int32    `pg:"p50,use_zero"`
+	P75            int32    `pg:"p75,use_zero"`
+	P90            int32    `pg:"p90,use_zero"`
 }
 
 type Item struct {
@@ -41,7 +41,7 @@ type PriceDistribution struct {
 	RealmID        int16    `pg:"realm_id,pk"`
 	AuctionHouseID int16    `pg:"auction_house_id,pk"`
 	ItemID         int32    `pg:"item_id,pk"`
-	BuyoutEach     int32    `pg:"buyout_each,pk"`
+	BuyoutEach     int32    `pg:"buyout_each,pk,use_zero"`
 	Quantity       int32    `pg:"quantity"`
 }
 
