@@ -46,7 +46,7 @@ type PriceDistribution struct {
 }
 
 type priceDistributionTemp struct {
-	tableName      struct{} `pg:"price_distributions"`
+	tableName      struct{} `pg:"price_distributions_temp"`
 	RealmID        int16    `pg:"realm_id,pk"`
 	AuctionHouseID int16    `pg:"auction_house_id,pk"`
 	ItemID         int32    `pg:"item_id,pk"`
