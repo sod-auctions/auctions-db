@@ -73,6 +73,24 @@ type currentAuctionsTemp struct {
 	P90            int32    `pg:"p90,use_zero"`
 }
 
+type CurrentAuctionQueryResult struct {
+	RealmID        int16  `pg:"realm_id,pk"`
+	AuctionHouseID int16  `pg:"auction_house_id,pk"`
+	ItemID         int    `pg:"item_id,pk"`
+	ItemName       string `pg:"item_name"`
+	ItemMediaURL   string `pg:"item_media_url"`
+	ItemRarity     string `pg:"item_rarity"`
+	Quantity       int32  `pg:"quantity"`
+	Min            int32  `pg:"min,use_zero"`
+	Max            int32  `pg:"max,use_zero"`
+	P05            int32  `pg:"p05,use_zero"`
+	P10            int32  `pg:"p10,use_zero"`
+	P25            int32  `pg:"p25,use_zero"`
+	P50            int32  `pg:"p50,use_zero"`
+	P75            int32  `pg:"p75,use_zero"`
+	P90            int32  `pg:"p90,use_zero"`
+}
+
 type Item struct {
 	tableName struct{} `pg:"items"`
 	Id        int32    `pg:"id,pk"`
@@ -187,7 +205,7 @@ func (database *Database) GetAuctions(interval int16, realmId int16, auctionHous
 	return auctions, nil
 }
 
-func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16, orderBy string, direction string, offset int32, limit int16) ([]CurrentAuction, error) {
+func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16, orderBy string, direction string, offset int32, limit int16) ([]CurrentAuctionQueryResult, error) {
 	var orderByQuery string
 	if orderBy == "p50" {
 		orderByQuery = "p50"
@@ -203,14 +221,16 @@ func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16
 	}
 
 	query := fmt.Sprintf(`
-		SELECT item_id, quantity, min, max, p05, p10, p25, p50, p75, p90
+		SELECT item_id, items.name AS item_name, items.media_url AS item_media_url, items.rarity AS item_rarity, 
+		       quantity, min, max, p05, p10, p25, p50, p75, p90
 		FROM current_auctions
 		WHERE realm_id = ? AND auction_house_id = ?
+		INNER JOIN items ON item_id = items.id
 		ORDER BY %s %s
 		OFFSET ? LIMIT ?
 	`, orderByQuery, directionQuery)
 
-	var currentAuctions []CurrentAuction
+	var currentAuctions []CurrentAuctionQueryResult
 	_, err := database.db.Query(&currentAuctions, query, realmId, auctionHouseId, offset, limit)
 	if err != nil {
 		return nil, err
