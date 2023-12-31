@@ -10,6 +10,12 @@ type Database struct {
 	db        *pg.DB
 }
 
+type Realm struct {
+	tableName struct{} `pg:"realms"`
+	Id        int16    `pg:"id,pk"`
+	Name      string   `pg:"name"`
+}
+
 type Auction struct {
 	tableName      struct{} `pg:"auctions"`
 	RealmID        int16    `pg:"realm_id,pk"`
@@ -107,6 +113,15 @@ func (database *Database) InsertItem(item *Item) error {
 		return err
 	}
 	return nil
+}
+
+func (database *Database) GetRealms() ([]Realm, error) {
+	var realms []Realm
+	_, err := database.db.Query(&realms, "SELECT id,name FROM realms")
+	if err != nil {
+		return nil, err
+	}
+	return realms, nil
 }
 
 func (database *Database) GetAuctions(interval int16, realmId int16, auctionHouseId int16, itemId int32, limit int16) ([]Auction, error) {
