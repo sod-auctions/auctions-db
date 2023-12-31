@@ -45,6 +45,15 @@ type PriceDistribution struct {
 	Quantity       int32    `pg:"quantity"`
 }
 
+type priceDistributionTemp struct {
+	tableName      struct{} `pg:"price_distributions"`
+	RealmID        int16    `pg:"realm_id,pk"`
+	AuctionHouseID int16    `pg:"auction_house_id,pk"`
+	ItemID         int32    `pg:"item_id,pk"`
+	BuyoutEach     int32    `pg:"buyout_each,pk,use_zero"`
+	Quantity       int32    `pg:"quantity"`
+}
+
 func NewDatabase(connString string) (*Database, error) {
 	options, err := pg.ParseURL(connString)
 	if err != nil {
@@ -145,13 +154,24 @@ func (database *Database) GetPriceDistributions(realmId int16, auctionHouseId in
 }
 
 func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceDistribution) error {
-	for i := 0; i < len(priceDistributions); i += database.BatchSize {
+	priceDistributionsTemp := make([]*priceDistributionTemp, len(priceDistributions))
+	for i, v := range priceDistributions {
+		priceDistributionsTemp[i] = &priceDistributionTemp{
+			RealmID:        v.RealmID,
+			AuctionHouseID: v.AuctionHouseID,
+			ItemID:         v.ItemID,
+			BuyoutEach:     v.BuyoutEach,
+			Quantity:       v.Quantity,
+		}
+	}
+
+	for i := 0; i < len(priceDistributionsTemp); i += database.BatchSize {
 		end := i + database.BatchSize
 		if end > len(priceDistributions) {
 			end = len(priceDistributions)
 		}
 		batch := priceDistributions[i:end]
-		_, err := database.db.Model(&batch).Table("price_distributions_temp").Insert()
+		_, err := database.db.Model(&batch).Insert()
 		if err != nil {
 			return err
 		}
