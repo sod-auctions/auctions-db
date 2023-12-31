@@ -11,35 +11,38 @@ type Database struct {
 }
 
 type Auction struct {
-	RealmID        int16
-	AuctionHouseID int16
-	ItemID         int
-	Interval       int16
-	Timestamp      int32
-	Quantity       int32
-	Min            int32
-	Max            int32
-	P05            int32
-	P10            int32
-	P25            int32
-	P50            int32
-	P75            int32
-	P90            int32
+	tableName      struct{} `pg:"auctions"`
+	RealmID        int16    `pg:"realm_id,pk"`
+	AuctionHouseID int16    `pg:"auction_house_id,pk"`
+	ItemID         int      `pg:"item_id,pk"`
+	Interval       int16    `pg:"interval,pk"`
+	Timestamp      int32    `pg:"timestamp,pk"`
+	Quantity       int32    `pg:"quantity"`
+	Min            int32    `pg:"min"`
+	Max            int32    `pg:"max"`
+	P05            int32    `pg:"p05"`
+	P10            int32    `pg:"p10"`
+	P25            int32    `pg:"p25"`
+	P50            int32    `pg:"p50"`
+	P75            int32    `pg:"p75"`
+	P90            int32    `pg:"p90"`
 }
 
 type Item struct {
-	Id       int32
-	Name     string
-	MediaURL string
-	Rarity   string
+	tableName struct{} `pg:"items"`
+	Id        int32    `pg:"id,pk"`
+	Name      string   `pg:"name"`
+	MediaURL  string   `pg:"media_url"`
+	Rarity    string   `pg:"rarity"`
 }
 
 type PriceDistribution struct {
-	RealmID        int16
-	AuctionHouseID int16
-	ItemID         int32
-	BuyoutEach     int32
-	Quantity       int32
+	tableName      struct{} `pg:"price_distributions"`
+	RealmID        int16    `pg:"realm_id,pk"`
+	AuctionHouseID int16    `pg:"auction_house_id,pk"`
+	ItemID         int32    `pg:"item_id,pk"`
+	BuyoutEach     int32    `pg:"buyout_each,pk"`
+	Quantity       int32    `pg:"quantity"`
 }
 
 func NewDatabase(connString string) (*Database, error) {
