@@ -224,8 +224,8 @@ func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16
 		SELECT item_id, items.name AS item_name, items.media_url AS item_media_url, items.rarity AS item_rarity, 
 		       quantity, min, max, p05, p10, p25, p50, p75, p90
 		FROM current_auctions
-		WHERE realm_id = ? AND auction_house_id = ?
 		INNER JOIN items ON item_id = items.id
+		WHERE realm_id = ? AND auction_house_id = ?
 		ORDER BY %s %s
 		OFFSET ? LIMIT ?
 	`, orderByQuery, directionQuery)
