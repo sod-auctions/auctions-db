@@ -371,7 +371,7 @@ func (database *Database) ReplaceCurrentAuctions(auctions []*Auction) error {
 		return err
 	}
 
-	_, err = tx.Exec("TRUNCATE TABLE price_distributions_temp")
+	_, err = tx.Exec("TRUNCATE TABLE current_auctions_temp")
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
