@@ -219,6 +219,16 @@ func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16
 	return currentAuctions, nil
 }
 
+func (database *Database) CountCurrentAuctions(realmId int16, auctionHouseId int16) (int, error) {
+	count, err := database.db.Model(&CurrentAuction{}).
+		Where("realm_id = ? and auction_house_id = ?", realmId, auctionHouseId).
+		Count()
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (database *Database) InsertAuctions(auctions []*Auction) error {
 	for i := 0; i < len(auctions); i += database.BatchSize {
 		end := i + database.BatchSize
