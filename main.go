@@ -187,7 +187,7 @@ func (database *Database) GetAuctions(interval int16, realmId int16, auctionHous
 	return auctions, nil
 }
 
-func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16, orderBy string, direction string, limit int16) ([]CurrentAuction, error) {
+func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16, orderBy string, direction string, offset int32, limit int16) ([]CurrentAuction, error) {
 	var orderByQuery string
 	if orderBy == "p50" {
 		orderByQuery = "p50"
@@ -207,11 +207,11 @@ func (database *Database) GetCurrentAuctions(realmId int16, auctionHouseId int16
 		FROM current_auctions
 		WHERE realm_id = ? AND auction_house_id = ?
 		ORDER BY %s %s
-		LIMIT ?
+		OFFSET ? LIMIT ?
 	`, orderByQuery, directionQuery)
 
 	var currentAuctions []CurrentAuction
-	_, err := database.db.Query(&currentAuctions, query, realmId, auctionHouseId, limit)
+	_, err := database.db.Query(&currentAuctions, query, realmId, auctionHouseId, offset, limit)
 	if err != nil {
 		return nil, err
 	}
