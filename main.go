@@ -16,6 +16,12 @@ type Realm struct {
 	Name      string   `pg:"name"`
 }
 
+type AuctionHouse struct {
+	tableName struct{} `pg:"auction_houses"`
+	Id        int16    `pg:"id,pk"`
+	Name      string   `pg:"name"`
+}
+
 type Auction struct {
 	tableName      struct{} `pg:"auctions"`
 	RealmID        int16    `pg:"realm_id,pk"`
@@ -78,6 +84,24 @@ func NewDatabase(connString string) (*Database, error) {
 	}, nil
 }
 
+func (database *Database) GetRealms() ([]Realm, error) {
+	var realms []Realm
+	_, err := database.db.Query(&realms, "SELECT id,name FROM realms")
+	if err != nil {
+		return nil, err
+	}
+	return realms, nil
+}
+
+func (database *Database) GetAuctionHouses() ([]AuctionHouse, error) {
+	var auctionHouses []AuctionHouse
+	_, err := database.db.Query(&auctionHouses, "SELECT id,name FROM auction_houses")
+	if err != nil {
+		return nil, err
+	}
+	return auctionHouses, nil
+}
+
 func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
 	var itemIds []int32
 	err := database.db.Model((*Item)(nil)).Column("id").Select(&itemIds)
@@ -113,15 +137,6 @@ func (database *Database) InsertItem(item *Item) error {
 		return err
 	}
 	return nil
-}
-
-func (database *Database) GetRealms() ([]Realm, error) {
-	var realms []Realm
-	_, err := database.db.Query(&realms, "SELECT id,name FROM realms")
-	if err != nil {
-		return nil, err
-	}
-	return realms, nil
 }
 
 func (database *Database) GetAuctions(interval int16, realmId int16, auctionHouseId int16, itemId int32, limit int16) ([]Auction, error) {
