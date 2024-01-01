@@ -153,6 +153,15 @@ func (database *Database) GetAuctionHouses() ([]AuctionHouse, error) {
 	return auctionHouses, nil
 }
 
+func (database *Database) GetItem(itemId int32) (*Item, error) {
+	item := &Item{}
+	err := database.db.Model(item).Where("id = ?", itemId).Select()
+	if err != nil {
+		return nil, err
+	}
+	return item, nil
+}
+
 func (database *Database) GetItemIDs() (map[int32]struct{}, error) {
 	var itemIds []int32
 	err := database.db.Model((*Item)(nil)).Column("id").Select(&itemIds)
