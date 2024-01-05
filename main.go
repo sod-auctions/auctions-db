@@ -195,8 +195,10 @@ func (database *Database) GetSimilarItems(name string, limit int) ([]Item, error
 	return items, nil
 }
 
-func (database *Database) InsertItem(item *Item) error {
-	_, err := database.db.Model(item).Insert()
+func (database *Database) UpsertItem(item *Item) error {
+	_, err := database.db.Model(item).
+		OnConflict("(id) DO UPDATE").
+		Insert()
 	if err != nil {
 		return err
 	}
