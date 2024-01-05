@@ -92,11 +92,15 @@ type CurrentAuctionQueryResult struct {
 }
 
 type Item struct {
-	tableName struct{} `pg:"items"`
-	Id        int32    `pg:"id,pk"`
-	Name      string   `pg:"name"`
-	MediaURL  string   `pg:"media_url"`
-	Rarity    string   `pg:"rarity"`
+	tableName     struct{} `pg:"items"`
+	Id            int32    `pg:"id,pk"`
+	Name          string   `pg:"name"`
+	MediaURL      string   `pg:"media_url"`
+	Rarity        string   `pg:"rarity"`
+	Level         int16    `pg:"level"`
+	RequiredLevel int16    `pg:"required_level"`
+	PurchasePrice int32    `pg:"purchase_price"`
+	SellPrice     int32    `pg:"sell_price"`
 }
 
 type PriceDistribution struct {
