@@ -140,6 +140,25 @@ type Forecast struct {
 	ProfitPct             float32  `pg:"profit_percentage,use_zero"`
 }
 
+type ForecastQueryResult struct {
+	ItemID                int32   `pg:"item_id"`
+	ItemName              string  `pg:"item_name"`
+	ItemMediaURL          string  `pg:"item_media_url"`
+	ItemRarity            string  `pg:"item_rarity"`
+	CurrentVal            int32   `pg:"current_val,use_zero"`
+	LowTimestamp          int32   `pg:"low_ts"`
+	LowVal                int32   `pg:"low_val,use_zero"`
+	HighTimestamp         int32   `pg:"high_ts"`
+	HighVal               int32   `pg:"high_val,use_zero"`
+	HighTimestampAfterLow int32   `pg:"high_ts_after_low"`
+	HighValAfterLow       int32   `pg:"high_val_after_low,use_zero"`
+	Deposit               int32   `pg:"deposit,use_zero"`
+	Fee                   int32   `pg:"fee,use_zero"`
+	Capital               int32   `pg:"capital,use_zero"`
+	Profit                int32   `pg:"profit,use_zero"`
+	ProfitPct             float32 `pg:"profit_percentage,use_zero"`
+}
+
 func NewDatabase(connString string) (*Database, error) {
 	options, err := pg.ParseURL(connString)
 	if err != nil {
@@ -309,8 +328,8 @@ func (database *Database) CountForecasts(realmId int16, auctionHouseId int16) (i
 	return count, nil
 }
 
-func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]Forecast, error) {
-	var forecasts []Forecast
+func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]ForecastQueryResult, error) {
+	var forecasts []ForecastQueryResult
 
 	var sortByQuery string
 	switch sortBy {
@@ -323,9 +342,11 @@ func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sort
 	}
 
 	query := fmt.Sprintf(`
-		SELECT item_id, current_val, low_ts, low_val, high_ts, high_val, high_ts_after_low, high_val_after_low, 
+		SELECT item_id, items.name AS item_name, items.media_url AS item_media_url, items.rarity AS item_rarity, 
+		       current_val, low_ts, low_val, high_ts, high_val, high_ts_after_low, high_val_after_low, 
 		       deposit, fee, capital, profit, profit_percentage
 		FROM forecasts
+		INNER JOIN items ON item_id = items.id
 		WHERE realm_id = ? AND auction_house_id = ?
 		ORDER BY %s, profit_percentage DESC
 		OFFSET ? LIMIT ?
