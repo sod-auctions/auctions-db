@@ -299,6 +299,16 @@ func (database *Database) InsertAuctions(auctions []*Auction) error {
 	return nil
 }
 
+func (database *Database) CountForecasts(realmId int16, auctionHouseId int16) (int, error) {
+	count, err := database.db.Model(&Forecast{}).
+		Where("realm_id = ? and auction_house_id = ?", realmId, auctionHouseId).
+		Count()
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]Forecast, error) {
 	var forecasts []Forecast
 
