@@ -299,6 +299,36 @@ func (database *Database) InsertAuctions(auctions []*Auction) error {
 	return nil
 }
 
+func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]Forecast, error) {
+	var forecasts []Forecast
+
+	var sortByQuery string
+	switch sortBy {
+	case "low":
+		sortByQuery = "low_ts"
+	case "high":
+		sortByQuery = "high_ts"
+	default:
+		sortByQuery = "low_ts"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT item_id, current_val, low_ts, low_val, high_ts, high_val, high_ts_after_low, high_val_after_low, 
+		       deposit, fee, capital, profit, profit_percentage
+		FROM forecasts
+		WHERE realm_id = ? AND auction_house_id = ?
+		ORDER BY %s, profit_percentage DESC
+		OFFSET ? LIMIT ?
+	`, sortByQuery)
+
+	_, err := database.db.Query(&forecasts, query, realmId, auctionHouseId, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return forecasts, nil
+}
+
 func (database *Database) UpsertForecast(forecast *Forecast) error {
 	_, err := database.db.Model(forecast).
 		OnConflict("(realm_id,auction_house_id,item_id) DO UPDATE").
