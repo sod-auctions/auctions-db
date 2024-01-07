@@ -126,18 +126,18 @@ type Forecast struct {
 	RealmID               int16    `pg:"realm_id,pk"`
 	AuctionHouseID        int16    `pg:"auction_house_id,pk"`
 	ItemID                int32    `pg:"item_id,pk"`
-	CurrentVal            int32    `pg:"current_val"`
+	CurrentVal            int32    `pg:"current_val,use_zero"`
 	LowTimestamp          int32    `pg:"low_ts"`
-	LowVal                int32    `pg:"low_val"`
+	LowVal                int32    `pg:"low_val,use_zero"`
 	HighTimestamp         int32    `pg:"high_ts"`
-	HighVal               int32    `pg:"high_val"`
+	HighVal               int32    `pg:"high_val,use_zero"`
 	HighTimestampAfterLow int32    `pg:"high_ts_after_low"`
-	HighValAfterLow       int32    `pg:"high_val_after_low"`
-	Deposit               int32    `pg:"deposit"`
-	Fee                   int32    `pg:"fee"`
-	Capital               int32    `pg:"capital"`
-	Profit                int32    `pg:"profit"`
-	ProfitPct             float32  `pg:"profit_percentage"`
+	HighValAfterLow       int32    `pg:"high_val_after_low,use_zero"`
+	Deposit               int32    `pg:"deposit,use_zero"`
+	Fee                   int32    `pg:"fee,use_zero"`
+	Capital               int32    `pg:"capital,use_zero"`
+	Profit                int32    `pg:"profit,use_zero"`
+	ProfitPct             float32  `pg:"profit_percentage,use_zero"`
 }
 
 func NewDatabase(connString string) (*Database, error) {
