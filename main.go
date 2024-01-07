@@ -121,6 +121,25 @@ type priceDistributionTemp struct {
 	Quantity       int32    `pg:"quantity"`
 }
 
+type Forecast struct {
+	tableName             struct{} `pg:"forecasts"`
+	RealmID               int16    `pg:"realm_id,pk"`
+	AuctionHouseID        int16    `pg:"auction_house_id,pk"`
+	ItemID                int32    `pg:"item_id,pk"`
+	CurrentVal            int32    `pg:"current_val"`
+	LowTimestamp          int32    `pg:"low_ts"`
+	LowVal                int32    `pg:"low_val"`
+	HighTimestamp         int32    `pg:"high_ts"`
+	HighVal               int32    `pg:"high_val"`
+	HighTimestampAfterLow int32    `pg:"high_ts_after_low"`
+	HighValAfterLow       int32    `pg:"high_val_after_low"`
+	Deposit               int32    `pg:"deposit"`
+	Fee                   int32    `pg:"fee"`
+	Capital               int32    `pg:"capital"`
+	Profit                int32    `pg:"profit"`
+	ProfitPct             float32  `pg:"profit_percentage"`
+}
+
 func NewDatabase(connString string) (*Database, error) {
 	options, err := pg.ParseURL(connString)
 	if err != nil {
@@ -277,6 +296,16 @@ func (database *Database) InsertAuctions(auctions []*Auction) error {
 		}
 	}
 
+	return nil
+}
+
+func (database *Database) UpsertForecast(forecast *Forecast) error {
+	_, err := database.db.Model(forecast).
+		OnConflict("(realm_id,auction_house_id,item_id) DO UPDATE").
+		Insert()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
