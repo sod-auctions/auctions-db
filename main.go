@@ -122,55 +122,59 @@ type priceDistributionTemp struct {
 }
 
 type PriceAverage struct {
-	tableName      struct{} `pg:"price_averages"`
-	RealmID        int16    `pg:"realm_id,pk"`
-	AuctionHouseId int16    `pg:"auction_house_id,pk"`
-	ItemID         int32    `pg:"item_id,pk"`
-	Quantity       int32    `pg:"quantity"`
-	P05Current     int32    `pg:"p05_current"`
-	P05Average     int32    `pg:"p05_average"`
-	p05Percent     float32  `pg:"p05_percent"`
-	P10Current     int32    `pg:"p10_current"`
-	P10Average     int32    `pg:"p10_average"`
-	p10Percent     float32  `pg:"p10_percent"`
-	P25Current     int32    `pg:"p25_current"`
-	P25Average     int32    `pg:"p25_average"`
-	p25Percent     float32  `pg:"p25_percent"`
-	P50Current     int32    `pg:"p50_current"`
-	P50Average     int32    `pg:"p50_average"`
-	p50Percent     float32  `pg:"p50_percent"`
-	P75Current     int32    `pg:"p75_current"`
-	P75Average     int32    `pg:"p75_average"`
-	p75Percent     float32  `pg:"p75_percent"`
-	P90Current     int32    `pg:"p90_current"`
-	P90Average     int32    `pg:"p90_average"`
-	p90Percent     float32  `pg:"p90_percent"`
+	tableName       struct{} `pg:"price_averages"`
+	RealmID         int16    `pg:"realm_id,pk"`
+	AuctionHouseId  int16    `pg:"auction_house_id,pk"`
+	ItemID          int32    `pg:"item_id,pk"`
+	QuantityCurrent int32    `pg:"quantity_current"`
+	QuantityAverage int32    `pg:"quantity_average"`
+	QuantityPercent float32  `pg:"quantity_percent"`
+	P05Current      int32    `pg:"p05_current"`
+	P05Average      int32    `pg:"p05_average"`
+	p05Percent      float32  `pg:"p05_percent"`
+	P10Current      int32    `pg:"p10_current"`
+	P10Average      int32    `pg:"p10_average"`
+	p10Percent      float32  `pg:"p10_percent"`
+	P25Current      int32    `pg:"p25_current"`
+	P25Average      int32    `pg:"p25_average"`
+	p25Percent      float32  `pg:"p25_percent"`
+	P50Current      int32    `pg:"p50_current"`
+	P50Average      int32    `pg:"p50_average"`
+	p50Percent      float32  `pg:"p50_percent"`
+	P75Current      int32    `pg:"p75_current"`
+	P75Average      int32    `pg:"p75_average"`
+	p75Percent      float32  `pg:"p75_percent"`
+	P90Current      int32    `pg:"p90_current"`
+	P90Average      int32    `pg:"p90_average"`
+	p90Percent      float32  `pg:"p90_percent"`
 }
 
 type priceAverageTemp struct {
-	tableName      struct{} `pg:"price_averages_temp"`
-	RealmID        int16    `pg:"realm_id,pk"`
-	AuctionHouseId int16    `pg:"auction_house_id,pk"`
-	ItemID         int32    `pg:"item_id,pk"`
-	Quantity       int32    `pg:"quantity"`
-	P05Current     int32    `pg:"p05_current"`
-	P05Average     int32    `pg:"p05_average"`
-	p05Percent     float32  `pg:"p05_percent"`
-	P10Current     int32    `pg:"p10_current"`
-	P10Average     int32    `pg:"p10_average"`
-	p10Percent     float32  `pg:"p10_percent"`
-	P25Current     int32    `pg:"p25_current"`
-	P25Average     int32    `pg:"p25_average"`
-	p25Percent     float32  `pg:"p25_percent"`
-	P50Current     int32    `pg:"p50_current"`
-	P50Average     int32    `pg:"p50_average"`
-	p50Percent     float32  `pg:"p50_percent"`
-	P75Current     int32    `pg:"p75_current"`
-	P75Average     int32    `pg:"p75_average"`
-	p75Percent     float32  `pg:"p75_percent"`
-	P90Current     int32    `pg:"p90_current"`
-	P90Average     int32    `pg:"p90_average"`
-	p90Percent     float32  `pg:"p90_percent"`
+	tableName       struct{} `pg:"price_averages_temp"`
+	RealmID         int16    `pg:"realm_id,pk"`
+	AuctionHouseId  int16    `pg:"auction_house_id,pk"`
+	ItemID          int32    `pg:"item_id,pk"`
+	QuantityCurrent int32    `pg:"quantity_current"`
+	QuantityAverage int32    `pg:"quantity_average"`
+	QuantityPercent float32  `pg:"quantity_percent"`
+	P05Current      int32    `pg:"p05_current"`
+	P05Average      int32    `pg:"p05_average"`
+	p05Percent      float32  `pg:"p05_percent"`
+	P10Current      int32    `pg:"p10_current"`
+	P10Average      int32    `pg:"p10_average"`
+	p10Percent      float32  `pg:"p10_percent"`
+	P25Current      int32    `pg:"p25_current"`
+	P25Average      int32    `pg:"p25_average"`
+	p25Percent      float32  `pg:"p25_percent"`
+	P50Current      int32    `pg:"p50_current"`
+	P50Average      int32    `pg:"p50_average"`
+	p50Percent      float32  `pg:"p50_percent"`
+	P75Current      int32    `pg:"p75_current"`
+	P75Average      int32    `pg:"p75_average"`
+	p75Percent      float32  `pg:"p75_percent"`
+	P90Current      int32    `pg:"p90_current"`
+	P90Average      int32    `pg:"p90_average"`
+	p90Percent      float32  `pg:"p90_percent"`
 }
 
 func NewDatabase(connString string) (*Database, error) {
@@ -354,9 +358,9 @@ func (database *Database) GetPriceAverages(realmId int16, auctionHouseId int16, 
 	}
 
 	query := fmt.Sprintf(`
-		SELECT item_id, quantity, p05_current, p05_average, p05_percent, p10_current, p10_average, p10_percent,
-		       p25_current, p25_average, p25_percent, p50_current, p50_average, p50_percent, p75_current, p75_average,
-		       p75_percent, p90_current, p90_average, p90_percent
+		SELECT item_id, quantity_current, quantity_average, quantity_percent, p05_current, p05_average, p05_percent, 
+		       p10_current, p10_average, p10_percent, p25_current, p25_average, p25_percent, p50_current, p50_average, 
+		       p50_percent, p75_current, p75_average, p75_percent, p90_current, p90_average, p90_percent
 		FROM price_averages
 		ORDER BY p05_percent %s
 		WHERE realm_id = ? AND auction_house_id = ?
@@ -508,28 +512,30 @@ func (database *Database) ReplacePriceAverages(priceAverages []*PriceAverage) er
 	priceAveragesTemp := make([]*priceAverageTemp, len(priceAverages))
 	for i, v := range priceAverages {
 		priceAveragesTemp[i] = &priceAverageTemp{
-			RealmID:        v.RealmID,
-			AuctionHouseId: v.AuctionHouseId,
-			ItemID:         v.ItemID,
-			Quantity:       v.Quantity,
-			P05Current:     v.P05Current,
-			P05Average:     v.P05Average,
-			p05Percent:     v.p05Percent,
-			P10Current:     v.P10Current,
-			P10Average:     v.P10Average,
-			p10Percent:     v.p10Percent,
-			P25Current:     v.P25Current,
-			P25Average:     v.P25Average,
-			p25Percent:     v.p25Percent,
-			P50Current:     v.P50Current,
-			P50Average:     v.P50Average,
-			p50Percent:     v.p50Percent,
-			P75Current:     v.P75Current,
-			P75Average:     v.P75Average,
-			p75Percent:     v.p75Percent,
-			P90Current:     v.P90Current,
-			P90Average:     v.P90Average,
-			p90Percent:     v.p90Percent,
+			RealmID:         v.RealmID,
+			AuctionHouseId:  v.AuctionHouseId,
+			ItemID:          v.ItemID,
+			QuantityCurrent: v.QuantityCurrent,
+			QuantityAverage: v.QuantityAverage,
+			QuantityPercent: v.QuantityPercent,
+			P05Current:      v.P05Current,
+			P05Average:      v.P05Average,
+			p05Percent:      v.p05Percent,
+			P10Current:      v.P10Current,
+			P10Average:      v.P10Average,
+			p10Percent:      v.p10Percent,
+			P25Current:      v.P25Current,
+			P25Average:      v.P25Average,
+			p25Percent:      v.p25Percent,
+			P50Current:      v.P50Current,
+			P50Average:      v.P50Average,
+			p50Percent:      v.p50Percent,
+			P75Current:      v.P75Current,
+			P75Average:      v.P75Average,
+			p75Percent:      v.p75Percent,
+			P90Current:      v.P90Current,
+			P90Average:      v.P90Average,
+			p90Percent:      v.p90Percent,
 		}
 	}
 
