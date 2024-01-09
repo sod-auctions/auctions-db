@@ -121,42 +121,56 @@ type priceDistributionTemp struct {
 	Quantity       int32    `pg:"quantity"`
 }
 
-type Forecast struct {
-	tableName             struct{} `pg:"forecasts"`
-	RealmID               int16    `pg:"realm_id,pk"`
-	AuctionHouseID        int16    `pg:"auction_house_id,pk"`
-	ItemID                int32    `pg:"item_id,pk"`
-	CurrentVal            int32    `pg:"current_val,use_zero"`
-	LowTimestamp          int32    `pg:"low_ts"`
-	LowVal                int32    `pg:"low_val,use_zero"`
-	HighTimestamp         int32    `pg:"high_ts"`
-	HighVal               int32    `pg:"high_val,use_zero"`
-	HighTimestampAfterLow int32    `pg:"high_ts_after_low"`
-	HighValAfterLow       int32    `pg:"high_val_after_low,use_zero"`
-	Deposit               int32    `pg:"deposit,use_zero"`
-	Fee                   int32    `pg:"fee,use_zero"`
-	Capital               int32    `pg:"capital,use_zero"`
-	Profit                int32    `pg:"profit,use_zero"`
-	ProfitPct             float32  `pg:"profit_percentage,use_zero"`
+type PriceAverage struct {
+	tableName      struct{} `pg:"price_averages"`
+	RealmID        int16    `pg:"realm_id,pk"`
+	AuctionHouseId int16    `pg:"auction_house_id,pk"`
+	ItemID         int32    `pg:"item_id,pk"`
+	Quantity       int32    `pg:"quantity"`
+	P05Current     int32    `pg:"p05_current"`
+	P05Average     int32    `pg:"p05_average"`
+	p05Percent     float32  `pg:"p05_percent"`
+	P10Current     int32    `pg:"p10_current"`
+	P10Average     int32    `pg:"p10_average"`
+	p10Percent     float32  `pg:"p10_percent"`
+	P25Current     int32    `pg:"p25_current"`
+	P25Average     int32    `pg:"p25_average"`
+	p25Percent     float32  `pg:"p25_percent"`
+	P50Current     int32    `pg:"p50_current"`
+	P50Average     int32    `pg:"p50_average"`
+	p50Percent     float32  `pg:"p50_percent"`
+	P75Current     int32    `pg:"p75_current"`
+	P75Average     int32    `pg:"p75_average"`
+	p75Percent     float32  `pg:"p75_percent"`
+	P90Current     int32    `pg:"p90_current"`
+	P90Average     int32    `pg:"p90_average"`
+	p90Percent     float32  `pg:"p90_percent"`
 }
 
-type ForecastQueryResult struct {
-	ItemID                int32   `pg:"item_id"`
-	ItemName              string  `pg:"item_name"`
-	ItemMediaURL          string  `pg:"item_media_url"`
-	ItemRarity            string  `pg:"item_rarity"`
-	CurrentVal            int32   `pg:"current_val,use_zero"`
-	LowTimestamp          int32   `pg:"low_ts"`
-	LowVal                int32   `pg:"low_val,use_zero"`
-	HighTimestamp         int32   `pg:"high_ts"`
-	HighVal               int32   `pg:"high_val,use_zero"`
-	HighTimestampAfterLow int32   `pg:"high_ts_after_low"`
-	HighValAfterLow       int32   `pg:"high_val_after_low,use_zero"`
-	Deposit               int32   `pg:"deposit,use_zero"`
-	Fee                   int32   `pg:"fee,use_zero"`
-	Capital               int32   `pg:"capital,use_zero"`
-	Profit                int32   `pg:"profit,use_zero"`
-	ProfitPct             float32 `pg:"profit_percentage,use_zero"`
+type priceAverageTemp struct {
+	tableName      struct{} `pg:"price_averages_temp"`
+	RealmID        int16    `pg:"realm_id,pk"`
+	AuctionHouseId int16    `pg:"auction_house_id,pk"`
+	ItemID         int32    `pg:"item_id,pk"`
+	Quantity       int32    `pg:"quantity"`
+	P05Current     int32    `pg:"p05_current"`
+	P05Average     int32    `pg:"p05_average"`
+	p05Percent     float32  `pg:"p05_percent"`
+	P10Current     int32    `pg:"p10_current"`
+	P10Average     int32    `pg:"p10_average"`
+	p10Percent     float32  `pg:"p10_percent"`
+	P25Current     int32    `pg:"p25_current"`
+	P25Average     int32    `pg:"p25_average"`
+	p25Percent     float32  `pg:"p25_percent"`
+	P50Current     int32    `pg:"p50_current"`
+	P50Average     int32    `pg:"p50_average"`
+	p50Percent     float32  `pg:"p50_percent"`
+	P75Current     int32    `pg:"p75_current"`
+	P75Average     int32    `pg:"p75_average"`
+	p75Percent     float32  `pg:"p75_percent"`
+	P90Current     int32    `pg:"p90_current"`
+	P90Average     int32    `pg:"p90_average"`
+	p90Percent     float32  `pg:"p90_percent"`
 }
 
 func NewDatabase(connString string) (*Database, error) {
@@ -318,58 +332,6 @@ func (database *Database) InsertAuctions(auctions []*Auction) error {
 	return nil
 }
 
-func (database *Database) CountForecasts(realmId int16, auctionHouseId int16) (int, error) {
-	count, err := database.db.Model(&Forecast{}).
-		Where("realm_id = ? and auction_house_id = ?", realmId, auctionHouseId).
-		Count()
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-func (database *Database) GetForecasts(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]ForecastQueryResult, error) {
-	var forecasts []ForecastQueryResult
-
-	var sortByQuery string
-	switch sortBy {
-	case "low":
-		sortByQuery = "low_ts"
-	case "high":
-		sortByQuery = "high_ts"
-	default:
-		sortByQuery = "low_ts"
-	}
-
-	query := fmt.Sprintf(`
-		SELECT item_id, items.name AS item_name, items.media_url AS item_media_url, items.rarity AS item_rarity, 
-		       current_val, low_ts, low_val, high_ts, high_val, high_ts_after_low, high_val_after_low, 
-		       deposit, fee, capital, profit, profit_percentage
-		FROM forecasts
-		INNER JOIN items ON item_id = items.id
-		WHERE realm_id = ? AND auction_house_id = ?
-		ORDER BY %s, profit_percentage DESC
-		OFFSET ? LIMIT ?
-	`, sortByQuery)
-
-	_, err := database.db.Query(&forecasts, query, realmId, auctionHouseId, offset, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return forecasts, nil
-}
-
-func (database *Database) UpsertForecast(forecast *Forecast) error {
-	_, err := database.db.Model(forecast).
-		OnConflict("(realm_id,auction_house_id,item_id) DO UPDATE").
-		Insert()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (database *Database) GetPriceDistributions(realmId int16, auctionHouseId int16, itemId int32) ([]PriceDistribution, error) {
 	var priceDistributions []PriceDistribution
 	_, err := database.db.Query(&priceDistributions, `
@@ -381,6 +343,32 @@ func (database *Database) GetPriceDistributions(realmId int16, auctionHouseId in
 		return nil, err
 	}
 	return priceDistributions, nil
+}
+
+func (database *Database) GetPriceAverages(realmId int16, auctionHouseId int16, sortBy string, offset int32, limit int16) ([]PriceAverage, error) {
+	var directionQuery string
+	if sortBy == "high" {
+		directionQuery = "DESC"
+	} else {
+		directionQuery = "ASC"
+	}
+
+	query := fmt.Sprintf(`
+		SELECT item_id, quantity, p05_current, p05_average, p05_percent, p10_current, p10_average, p10_percent,
+		       p25_current, p25_average, p25_percent, p50_current, p50_average, p50_percent, p75_current, p75_average,
+		       p75_percent, p90_current, p90_average, p90_percent
+		FROM price_averages
+		ORDER BY p05_percent %s
+		WHERE realm_id = ? AND auction_house_id = ?
+		OFFSET ? LIMIT ?
+	`, directionQuery)
+
+	var priceAverages []PriceAverage
+	_, err := database.db.Query(&priceAverages, query, realmId, auctionHouseId, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return priceAverages, nil
 }
 
 func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceDistribution) error {
@@ -432,6 +420,11 @@ func (database *Database) ReplacePriceDistributions(priceDistributions []*PriceD
 	}
 
 	_, err = tx.Exec("TRUNCATE TABLE price_distributions_temp")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
@@ -497,6 +490,91 @@ func (database *Database) ReplaceCurrentAuctions(auctions []*Auction) error {
 	}
 
 	_, err = tx.Exec("TRUNCATE TABLE current_auctions_temp")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+func (database *Database) ReplacePriceAverages(priceAverages []*PriceAverage) error {
+	priceAveragesTemp := make([]*priceAverageTemp, len(priceAverages))
+	for i, v := range priceAverages {
+		priceAveragesTemp[i] = &priceAverageTemp{
+			RealmID:        v.RealmID,
+			AuctionHouseId: v.AuctionHouseId,
+			ItemID:         v.ItemID,
+			Quantity:       v.Quantity,
+			P05Current:     v.P05Current,
+			P05Average:     v.P05Average,
+			p05Percent:     v.p05Percent,
+			P10Current:     v.P10Current,
+			P10Average:     v.P10Average,
+			p10Percent:     v.p10Percent,
+			P25Current:     v.P25Current,
+			P25Average:     v.P25Average,
+			p25Percent:     v.p25Percent,
+			P50Current:     v.P50Current,
+			P50Average:     v.P50Average,
+			p50Percent:     v.p50Percent,
+			P75Current:     v.P75Current,
+			P75Average:     v.P75Average,
+			p75Percent:     v.p75Percent,
+			P90Current:     v.P90Current,
+			P90Average:     v.P90Average,
+			p90Percent:     v.p90Percent,
+		}
+	}
+
+	for i := 0; i < len(priceAveragesTemp); i += database.BatchSize {
+		end := i + database.BatchSize
+		if end > len(priceAverages) {
+			end = len(priceAverages)
+		}
+		batch := priceAveragesTemp[i:end]
+		_, err := database.db.Model(&batch).Insert()
+		if err != nil {
+			return err
+		}
+	}
+
+	tx, err := database.db.Begin()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_averages RENAME TO price_averages_temp2")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_averages_temp RENAME TO price_averages")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE price_averages_temp2 RENAME TO price_averages_temp")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = tx.Exec("TRUNCATE TABLE price_averages_temp")
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
