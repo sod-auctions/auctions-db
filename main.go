@@ -131,22 +131,22 @@ type PriceAverage struct {
 	QuantityPercent float32  `pg:"quantity_percent"`
 	P05Current      int32    `pg:"p05_current"`
 	P05Average      int32    `pg:"p05_average"`
-	p05Percent      float32  `pg:"p05_percent"`
+	P05Percent      float32  `pg:"p05_percent"`
 	P10Current      int32    `pg:"p10_current"`
 	P10Average      int32    `pg:"p10_average"`
-	p10Percent      float32  `pg:"p10_percent"`
+	P10Percent      float32  `pg:"p10_percent"`
 	P25Current      int32    `pg:"p25_current"`
 	P25Average      int32    `pg:"p25_average"`
-	p25Percent      float32  `pg:"p25_percent"`
+	P25Percent      float32  `pg:"p25_percent"`
 	P50Current      int32    `pg:"p50_current"`
 	P50Average      int32    `pg:"p50_average"`
-	p50Percent      float32  `pg:"p50_percent"`
+	P50Percent      float32  `pg:"p50_percent"`
 	P75Current      int32    `pg:"p75_current"`
 	P75Average      int32    `pg:"p75_average"`
-	p75Percent      float32  `pg:"p75_percent"`
+	P75Percent      float32  `pg:"p75_percent"`
 	P90Current      int32    `pg:"p90_current"`
 	P90Average      int32    `pg:"p90_average"`
-	p90Percent      float32  `pg:"p90_percent"`
+	P90Percent      float32  `pg:"p90_percent"`
 }
 
 type priceAverageTemp struct {
@@ -159,22 +159,22 @@ type priceAverageTemp struct {
 	QuantityPercent float32  `pg:"quantity_percent"`
 	P05Current      int32    `pg:"p05_current"`
 	P05Average      int32    `pg:"p05_average"`
-	p05Percent      float32  `pg:"p05_percent"`
+	P05Percent      float32  `pg:"p05_percent"`
 	P10Current      int32    `pg:"p10_current"`
 	P10Average      int32    `pg:"p10_average"`
-	p10Percent      float32  `pg:"p10_percent"`
+	P10Percent      float32  `pg:"p10_percent"`
 	P25Current      int32    `pg:"p25_current"`
 	P25Average      int32    `pg:"p25_average"`
-	p25Percent      float32  `pg:"p25_percent"`
+	P25Percent      float32  `pg:"p25_percent"`
 	P50Current      int32    `pg:"p50_current"`
 	P50Average      int32    `pg:"p50_average"`
-	p50Percent      float32  `pg:"p50_percent"`
+	P50Percent      float32  `pg:"p50_percent"`
 	P75Current      int32    `pg:"p75_current"`
 	P75Average      int32    `pg:"p75_average"`
-	p75Percent      float32  `pg:"p75_percent"`
+	P75Percent      float32  `pg:"p75_percent"`
 	P90Current      int32    `pg:"p90_current"`
 	P90Average      int32    `pg:"p90_average"`
-	p90Percent      float32  `pg:"p90_percent"`
+	P90Percent      float32  `pg:"p90_percent"`
 }
 
 func NewDatabase(connString string) (*Database, error) {
